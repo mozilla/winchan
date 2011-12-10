@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p>
+hi!  this is a simple webpage that uses winchan to open a window with 
+parameters.
+<button>run-it</button>
+</p>
+
+<p>Here's the response from the window:</p>
+<pre>
+</pre>
+
+</body>
+<script src="../winchan.js"></script>
+<script src="jquery.js"></script>
+<script>
+
+$("button").click(function(e) {
+  e.preventDefault();
+  WinChan.open(
+    "child.html",
+    "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
+    {
+      these: "things",
+      are: "input parameters",
+      the: "interface",
+      is_beautiful: true
+    },
+    function(err, r) {
+      $("pre").text(JSON.stringify(r, null, "    "));
+    });
+});
+
+</script>
+</html>
