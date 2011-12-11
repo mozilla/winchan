@@ -1,13 +1,14 @@
 ;WinChan = (function() {
-  // portable addListener implementation
+  // a portable addListener implementation
   function addListener(w, event, cb) {
-    if (w.addEventListener) w.addEventListener(event, cb, false);
-    else if(w.attachEvent) w.attachEvent('on' + event, cb);
+    if(w.attachEvent) w.attachEvent('on' + event, cb);
+    else if (w.addEventListener) w.addEventListener(event, cb, false);
   }
 
+  // a portable removeListener implementation
   function removeListener(w, event, cb) {
-    if (w.removeEventListener) w.removeEventListener(event, cb, false);
-    else if(w.detachEvent) w.detachEvent('on' + event, cb);
+    if(w.detachEvent) w.detachEvent('on' + event, cb);
+    else if (w.removeEventListener) w.removeEventListener(event, cb, false);
   }
 
   // checking for IE8 or above
@@ -94,8 +95,8 @@
         try {
           theFrame.doPost('{"a": "ready"}', "*");
         } catch(e) {
-          // XXX: This codepath appears to not be working in IE9, but is reliable
-          // in IE8.
+          // XXX: Some cases on IE9 have been observed where
+          // this doesn't work.  More testing required.
           addListener(theFrame, 'load', function(e) {
             theFrame.doPost('{"a": "ready"}', "*");
           });
