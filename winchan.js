@@ -5,6 +5,11 @@
     else if(w.attachEvent) w.attachEvent('on' + event, cb);
   }
 
+  function removeListener(w, event, cb) {
+    if (w.removeEventListener) w.removeEventListener(event, cb, false);
+    else if(w.detachEvent) w.detachEvent('on' + event, cb);
+  }
+
   // checking for IE8 or above
   function isInternetExplorer() {
     var rv = -1; // Return value assumes failure.
@@ -24,6 +29,18 @@
   }
 
   if (isInternetExplorer()) {
+    /*  This is how we roll on IE:
+     *  0. user clicks
+     *  1. caller adds relay iframe (served from trusted domain) to DOM
+     *  2. caller opens window (with content from trusted domain)
+     *  3. window on opening adds a listener to 'message'
+     *  4. window on opening finds iframe
+     *  5. window checks if iframe is "loaded" - has a 'doPost' function yet
+     *  5a. if iframe.doPost exists, window uses it to send ready event to caller
+     *  5b. if iframe.doPost doesn't exist, window waits for frame ready
+     *   5bi. once ready, window calls iframe.doPost to send ready event
+     *  6. caller upon reciept of 'ready', sends args
+     */
     return {
       open: function(url, relay_url, winopts, arg, cb) {
         // first we need to add a "relay" iframe to the document that's served
@@ -36,58 +53,53 @@
         iframe.setAttribute('name', "oogabooga");
         document.body.appendChild(iframe);
 
-        // open a window
-        var w = window.open(url, "_mozid_signin", winopts); 
+        var w = window.open(url, null, winopts); 
 
-        // encode our 'request'
         var req = JSON.stringify({a: 'request', d: arg});
 
-        // post into the iframe
-        iframe.contentWindow.postMessage(req, "*");
+        function onMessage(e) {
+          try {
+            var d = JSON.parse(e.data);
+            if (d.a === 'ready') {
+              iframe.contentWindow.postMessage(req, "*");
+            }
+            else if (d.a === 'response') {
+              removeListener(window, 'message', onMessage);
+              document.body.removeChild(iframe);
+              cb(null, d.d);
+            }
+          } catch(e) { }
+        };
 
-        // and listen for responses
-        addListener(window, 'message', function(e) {
-          iframe.contentWindow.postMessage(req, "*");
-        });
+        addListener(window, 'message', onMessage);
       },
       onOpen: function(cb) {
         var theFrame = window.opener.frames["oogabooga"];
+
         var source;
         function onMessage(e) {
           var d, o = e.origin;
           try {
             d = JSON.parse(e.data);
-          } catch(e) {
-            // ignore
-          }
+          } catch(e) { }
           source = e.source;
           cb(o, d.d, function(r) {
-            theFrame.parent.postMessage(JSON.stringify({a: 'response', d: r}),"*");
+            theFrame.doPost(JSON.stringify({a: 'response', d: r}),"*");
           });
         }
         addListener(theFrame, 'message', onMessage);
 
-//        theFrame.parent.postMessage('{"a": "resend"}', "*");
-
-/* 
-        if (theFrame.data) {
-          cb(theFrame.orgin, theFrame.data, cb);
-        } else if (typeof theFrame.register === 'function') {
-          theFrame.register(function() {
-            cb(theFrame.orgin, theFrame.data, cb);
-          });
-        } else {
+        // we cannot post to our parent that we're ready before the iframe
+        // is loaded.
+        try {
+          theFrame.doPost('{"a": "ready"}', "*");
+        } catch(e) {
+          // XXX: This codepath appears to not be working in IE9, but is reliable
+          // in IE8.
           addListener(theFrame, 'load', function(e) {
-            if (theFrame.data) {
-              cb(theFrame.orgin, theFrame.data, cb);
-            } else {
-              theFrame.register(function() {
-                cb(theFrame.orgin, theFrame.data, cb);
-              });
-            } 
+            theFrame.doPost('{"a": "ready"}', "*");
           });
         }
-*/
       }
     };
   } else if (isSupported()) {
@@ -95,15 +107,12 @@
       open: function(url, relay_url, winopts, arg, cb) {
         var w = window.open(url, null, winopts); 
         var req = JSON.stringify({a: 'request', d: arg});
-        w.postMessage(req, "*");
         addListener(window, 'message', function(e) {
           try {
             var d = JSON.parse(e.data);
-            if (d.a === 'resend') {
-              w.postMessage(req, "*");
-            } else if (d.a === 'response') cb(null, d.d);
-          } catch(e) {
-          }
+            if (d.a === 'ready') w.postMessage(req, "*");
+            else if (d.a === 'response') cb(null, d.d);
+          } catch(e) { }
         });
       },
       onOpen: function(cb) {
@@ -121,7 +130,7 @@
           });
         }
         addListener(window, 'message', onMessage);
-        window.opener.postMessage('{"a": "resend"}', "*");
+        window.opener.postMessage('{"a": "ready"}', "*");
       }
     };
   } else {

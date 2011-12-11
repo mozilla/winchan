@@ -17,10 +17,11 @@ parameters.
 <script>
 
 $("button").click(function(e) {
+  $("pre").text("");
   e.preventDefault();
   WinChan.open(
-    "http://192.168.48.1:8200/example/child.html",
-    "http://192.168.48.1:8200/relay.html",
+    "http://127.0.0.1:8200/example/child.html",
+    "http://127.0.0.1:8200/relay.html",
     "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
     {
       these: "things",
