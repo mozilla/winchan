@@ -30,7 +30,7 @@ $("button").click(function(e) {
       is_beautiful: true
     },
     function(err, r) {
-      $("pre").text(JSON.stringify(r, null, "    "));
+      $("pre").text("error: " + err + "\n\nresponse: " + JSON.stringify(r, null, "    "));
     });
 });
 

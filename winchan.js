@@ -70,9 +70,8 @@
         function onMessage(e) {
           try {
             var d = JSON.parse(e.data);
-            if (d.a === 'ready') {
-              iframe.contentWindow.postMessage(req, "*");
-            }
+            if (d.a === 'ready') iframe.contentWindow.postMessage(req, "*");
+            else if (d.a === 'error') cb(d.d);
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
               removeListener(window, 'unload', cleanup);
@@ -87,14 +86,13 @@
       onOpen: function(cb) {
         var theFrame = window.opener.frames["oogabooga"];
 
-        var source;
         function onMessage(e) {
           var d, o = e.origin;
           try {
             d = JSON.parse(e.data);
           } catch(e) { }
-          source = e.source;
-          cb(o, d.d, function(r) {
+          if (cb) cb(o, d.d, function(r) {
+            cb = undefined;
             theFrame.doPost(JSON.stringify({a: 'response', d: r}),"*");
           });
         }
@@ -105,12 +103,16 @@
         try {
           theFrame.doPost('{"a": "ready"}', "*");
         } catch(e) {
-          // XXX: Some cases on IE9 have been observed where
-          // this doesn't work.  More testing required.
           addListener(theFrame, 'load', function(e) {
             theFrame.doPost('{"a": "ready"}', "*");
           });
         }
+
+        // if window is unloaded and the client hasn't called cb, it's an error
+        addListener(window, 'unload', function() {
+          if (cb) theFrame.doPost(JSON.stringify({a: 'error', d: 'client closed window'}),"*");
+          cb = undefined;
+        });
       }
     };
   } else if (isSupported()) {
@@ -130,6 +132,7 @@
           try {
             var d = JSON.parse(e.data);
             if (d.a === 'ready') w.postMessage(req, "*");
+            else if (d.a === 'error') cb(d.d);
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
               removeListener(window, 'unload', cleanup);
@@ -140,7 +143,6 @@
         addListener(window, 'message', onMessage);
       },
       onOpen: function(cb) {
-        var source;
         function onMessage(e) {
           var d, o = e.origin;
           try {
@@ -148,13 +150,19 @@
           } catch(e) {
             // ignore
           }
-          source = e.source;
           cb(o, d.d, function(r) {
+            cb = undefined;
             window.opener.postMessage(JSON.stringify({a: 'response', d: r}),"*");
           });
         }
         addListener(window, 'message', onMessage);
         window.opener.postMessage('{"a": "ready"}', "*");
+
+        // if window is unloaded and the client hasn't called cb, it's an error
+        addListener(window, 'unload', function() {
+          if (cb) window.opener.postMessage(JSON.stringify({a: 'error', d: 'client closed window'}),"*");
+          cb = undefined;
+        });
       }
     };
   } else {
