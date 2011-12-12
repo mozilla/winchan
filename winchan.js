@@ -29,6 +29,13 @@
             window.JSON.parse && window.postMessage);
   }
 
+  // given a URL, extract the origin
+  function extractOrigin(url) {
+    var m = /^(https?:\/\/[-_a-zA-Z\.0-9:]+)/.exec(url);
+    if (m) return m[1];
+    return url;
+  }
+
   if (isInternetExplorer()) {
     /*  This is how we roll on IE:
      *  0. user clicks
@@ -44,6 +51,17 @@
      */
     return {
       open: function(url, relay_url, winopts, arg, cb) {
+        if (!cb) throw "missing required callback argument";
+
+        // sanity check, are url and relay_url the same origin? 
+        var origin = extractOrigin(url);
+        if (origin !== extractOrigin(relay_url)) {
+          setTimeout(function() {
+            cb('invalid arguments: origin of url and relay_url must match');
+          })
+          return;
+        }
+
         // first we need to add a "relay" iframe to the document that's served
         // from the target domain.  We can postmessage into a iframe, but not a
         // window
@@ -55,7 +73,6 @@
         document.body.appendChild(iframe);
 
         var w = window.open(url, null, winopts); 
-
         var req = JSON.stringify({a: 'request', d: arg});
 
         // cleanup on unload
@@ -68,9 +85,10 @@
         addListener(window, 'unload', cleanup);
 
         function onMessage(e) {
+
           try {
             var d = JSON.parse(e.data);
-            if (d.a === 'ready') iframe.contentWindow.postMessage(req, "*");
+            if (d.a === 'ready') iframe.contentWindow.postMessage(req, origin);
             else if (d.a === 'error') cb(d.d);
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
@@ -84,16 +102,18 @@
         addListener(window, 'message', onMessage);
       },
       onOpen: function(cb) {
+        var o = "*";
         var theFrame = window.opener.frames["oogabooga"];
 
         function onMessage(e) {
-          var d, o = e.origin;
+          var d;
+          o = e.origin;
           try {
             d = JSON.parse(e.data);
           } catch(e) { }
           if (cb) cb(o, d.d, function(r) {
             cb = undefined;
-            theFrame.doPost(JSON.stringify({a: 'response', d: r}),"*");
+            theFrame.doPost(JSON.stringify({a: 'response', d: r}), o);
           });
         }
         addListener(theFrame, 'message', onMessage);
@@ -101,16 +121,18 @@
         // we cannot post to our parent that we're ready before the iframe
         // is loaded.
         try {
-          theFrame.doPost('{"a": "ready"}', "*");
+          theFrame.doPost('{"a": "ready"}', o);
         } catch(e) {
           addListener(theFrame, 'load', function(e) {
-            theFrame.doPost('{"a": "ready"}', "*");
+            theFrame.doPost('{"a": "ready"}', o);
           });
         }
 
         // if window is unloaded and the client hasn't called cb, it's an error
         addListener(window, 'unload', function() {
-          if (cb) theFrame.doPost(JSON.stringify({a: 'error', d: 'client closed window'}),"*");
+          if (cb) theFrame.doPost(JSON.stringify({
+            a: 'error', d: 'client closed window'
+          }), o);
           cb = undefined;
         });
       }
@@ -118,6 +140,17 @@
   } else if (isSupported()) {
     return {
       open: function(url, relay_url, winopts, arg, cb) {
+        if (!cb) throw "missing required callback argument";
+
+        // sanity check, are url and relay_url the same origin? 
+        var origin = extractOrigin(url);
+        if (origin !== extractOrigin(relay_url)) {
+          setTimeout(function() {
+            cb('invalid arguments: origin of url and relay_url must match');
+          })
+          return;
+        }
+
         var w = window.open(url, null, winopts); 
         var req = JSON.stringify({a: 'request', d: arg});
 
@@ -131,7 +164,7 @@
         function onMessage(e) {
           try {
             var d = JSON.parse(e.data);
-            if (d.a === 'ready') w.postMessage(req, "*");
+            if (d.a === 'ready') w.postMessage(req, origin);
             else if (d.a === 'error') cb(d.d);
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
@@ -143,8 +176,11 @@
         addListener(window, 'message', onMessage);
       },
       onOpen: function(cb) {
+        var o = "*";
+        var parentWin = window.opener;
         function onMessage(e) {
-          var d, o = e.origin;
+          var d;
+          o = e.origin;
           try {
             d = JSON.parse(e.data);
           } catch(e) {
@@ -152,15 +188,18 @@
           }
           cb(o, d.d, function(r) {
             cb = undefined;
-            window.opener.postMessage(JSON.stringify({a: 'response', d: r}),"*");
+            parentWin.postMessage(JSON.stringify({a: 'response', d: r}), o);
           });
         }
         addListener(window, 'message', onMessage);
-        window.opener.postMessage('{"a": "ready"}', "*");
+        parentWin.postMessage('{"a": "ready"}', o);
 
         // if window is unloaded and the client hasn't called cb, it's an error
         addListener(window, 'unload', function() {
-          if (cb) window.opener.postMessage(JSON.stringify({a: 'error', d: 'client closed window'}),"*");
+          if (cb) parentWin.postMessage(JSON.stringify({
+            a: 'error',
+            d: 'client closed window'
+          }), o);
           cb = undefined;
         });
       }
