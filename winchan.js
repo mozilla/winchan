@@ -134,6 +134,8 @@
             a: 'error', d: 'client closed window'
           }), o);
           cb = undefined;
+          // explicitly close the window, in case the client is trying to reload or nav
+          try { window.close(); } catch (e) { };
         });
       }
     };
@@ -201,6 +203,8 @@
             d: 'client closed window'
           }), o);
           cb = undefined;
+          // explicitly close the window, in case the client is trying to reload or nav
+          try { window.close(); } catch (e) { };
         });
       }
     };
