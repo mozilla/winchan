@@ -18,7 +18,11 @@ WinChan.onOpen(function(origin, r, cb) {
   $("pre").text(JSON.stringify(r, null, "    "));
 
   $("button").click(function() {
-    cb({thanks: 'for', "calling": true});
+    cb({
+      thanks: 'for',
+      "calling": true,
+      timestamp: new Date().toString()
+    });
     window.close();
   });
 });

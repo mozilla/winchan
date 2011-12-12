@@ -27,7 +27,8 @@ $("button").click(function(e) {
       these: "things",
       are: "input parameters",
       the: "interface",
-      is_beautiful: true
+      is_beautiful: true,
+      timestamp: new Date().toString()
     },
     function(err, r) {
       $("pre").text("error: " + err + "\n\nresponse: " + JSON.stringify(r, null, "    "));
