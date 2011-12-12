@@ -1,4 +1,6 @@
 ;WinChan = (function() {
+  var IFRAME_NAME = "_moz_vep_comm_iframe";
+
   // a portable addListener implementation
   function addListener(w, event, cb) {
     if(w.attachEvent) w.attachEvent('on' + event, cb);
@@ -37,6 +39,23 @@
   }
 
   if (isInternetExplorer()) {
+    // find the relay iframe in the opener
+    function findRelay() {
+      var loc = window.location;
+      var frames = window.opener.frames;
+      var origin = loc.protocol + '//' + loc.host;
+      for (i = frames.length - 1; i >= 0; i++) {
+        try {
+          if (frames[i].location.href.indexOf(origin) === 0 &&
+              frames[i].name === IFRAME_NAME)
+          {
+            return frames[i];
+          }
+        } catch(e) { }
+      }
+      return;
+    }
+
     /*  This is how we roll on IE:
      *  0. user clicks
      *  1. caller adds relay iframe (served from trusted domain) to DOM
@@ -69,7 +88,7 @@
         // iframe.setAttribute('name', framename);
         iframe.setAttribute('src', relay_url);
         iframe.style.display = "none";
-        iframe.setAttribute('name', "oogabooga");
+        iframe.setAttribute('name', IFRAME_NAME);
         document.body.appendChild(iframe);
 
         var w = window.open(url, null, winopts); 
@@ -103,7 +122,8 @@
       },
       onOpen: function(cb) {
         var o = "*";
-        var theFrame = window.opener.frames["oogabooga"];
+        var theFrame = findRelay();
+        if (!theFrame) throw "can't find relay frame";
 
         function onMessage(e) {
           var d;
