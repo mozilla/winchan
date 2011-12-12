@@ -93,8 +93,8 @@
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
               removeListener(window, 'unload', cleanup);
-              cb(null, d.d);
               cleanup();
+              cb(null, d.d);
             }
           } catch(e) { }
         };
