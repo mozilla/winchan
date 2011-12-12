@@ -11,18 +11,20 @@ var client = express.createServer(),
     server = express.createServer();
 
 var subMiddleware = postprocess(function(req, buf) {
-  var re = new Regexp('127\.0\.0\.1', 'g');
+  var re = new RegExp('127\\.0\\.0\\.1', 'g');
   return buf.replace(re, IP_ADDRESS);
 });
 
 client
-  .use(express.static(path.join(__dirname)))
+  .use(express.logger({ format: 'dev' }))
   .use(subMiddleware)
+  .use(express.static(path.join(__dirname)))
   .listen(8100);
 
 server
-  .use(express.static(path.join(__dirname)))
+  .use(express.logger({ format: 'dev' }))
   .use(subMiddleware)
+  .use(express.static(path.join(__dirname)))
   .listen(8200);
 
 console.log("open http://" + IP_ADDRESS + ":8100/example/parent.html");
