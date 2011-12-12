@@ -3,7 +3,7 @@
 <head>
 </head>
 <body>
-<p>hi!  this is a dialog that is opened by parent.html.</p>
+<p>hi!  This is a dialog that is was opened by <b><span id="who">...</span></b>.</p>
 
 <p>Here are its parameters:</p>
 <pre>
@@ -15,6 +15,7 @@
 <script>
 
 WinChan.onOpen(function(origin, r, cb) {
+  $("#who").text(origin);
   $("pre").text(JSON.stringify(r, null, "    "));
 
   $("button").click(function() {
