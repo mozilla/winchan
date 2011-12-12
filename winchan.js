@@ -58,6 +58,15 @@
 
         var req = JSON.stringify({a: 'request', d: arg});
 
+        // cleanup on unload
+        function cleanup() {
+          document.body.removeChild(iframe);
+          if (w) w.close();
+          w = undefined;
+        }
+
+        addListener(window, 'unload', cleanup);
+
         function onMessage(e) {
           try {
             var d = JSON.parse(e.data);
@@ -66,8 +75,9 @@
             }
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
-              document.body.removeChild(iframe);
+              removeListener(window, 'unload', cleanup);
               cb(null, d.d);
+              cleanup();
             }
           } catch(e) { }
         };
@@ -108,13 +118,26 @@
       open: function(url, relay_url, winopts, arg, cb) {
         var w = window.open(url, null, winopts); 
         var req = JSON.stringify({a: 'request', d: arg});
-        addListener(window, 'message', function(e) {
+
+        // cleanup on unload
+        function cleanup() {
+          if (w) w.close();
+          w = undefined;
+        } 
+        addListener(window, 'unload', cleanup);
+
+        function onMessage(e) {
           try {
             var d = JSON.parse(e.data);
             if (d.a === 'ready') w.postMessage(req, "*");
-            else if (d.a === 'response') cb(null, d.d);
+            else if (d.a === 'response') {
+              removeListener(window, 'message', onMessage);
+              removeListener(window, 'unload', cleanup);
+              cb(null, d.d);
+            }
           } catch(e) { }
-        });
+        }
+        addListener(window, 'message', onMessage);
       },
       onOpen: function(cb) {
         var source;
