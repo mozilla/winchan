@@ -36,7 +36,7 @@ $("button").click(function(e) {
       },
       function(err, r) {
         if (!err) success++;
-        if (++iterations < 10) setTimeout(doIt, 0);
+        if (++iterations < 50) setTimeout(doIt, 0);
         $("pre").text("successful/total iterations: " + success + "/" + iterations);
       });
   }
