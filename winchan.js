@@ -173,14 +173,14 @@
           return;
         }
 
-        var w = window.open(url, null, winopts); 
+        var w = window.open(url, null, winopts);
         var req = JSON.stringify({a: 'request', d: arg});
 
         // cleanup on unload
         function cleanup() {
           if (w) w.close();
           w = undefined;
-        } 
+        }
         addListener(window, 'unload', cleanup);
 
         function onMessage(e) {
@@ -191,6 +191,7 @@
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
               removeListener(window, 'unload', cleanup);
+              cleanup();
               cb(null, d.d);
             }
           } catch(e) { }
