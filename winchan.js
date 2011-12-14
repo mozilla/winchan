@@ -25,6 +25,14 @@
     return rv >= 8;
   }
 
+  // checking Mobile Firefox (Fennec)
+  function isFennec() {
+    try {
+      return (navigator.userAgent.indexOf('Fennec/') != -1);
+    } catch(e) {};
+    return false;
+  }
+
   // feature checking to see if this platform is supported at all
   function isSupported() {
     return (window.JSON && window.JSON.stringify &&
@@ -173,7 +181,7 @@
           return;
         }
 
-        var w = window.open(url, null, winopts);
+        var w = window.open(url, null, isFennec() ? undefined : winopts);
         var req = JSON.stringify({a: 'request', d: arg});
 
         // cleanup on unload
