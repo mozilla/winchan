@@ -112,7 +112,6 @@
         addListener(window, 'unload', cleanup);
 
         function onMessage(e) {
-
           try {
             var d = JSON.parse(e.data);
             if (d.a === 'ready') iframe.contentWindow.postMessage(req, origin);
@@ -127,6 +126,16 @@
         };
 
         addListener(window, 'message', onMessage);
+
+        return {
+          close: function() {
+            if (w) w.close();
+            w = undefined;
+          },
+          focus: function() {
+            if (w) w.focus();
+          }
+        };
       },
       onOpen: function(cb) {
         var o = "*";
@@ -205,6 +214,16 @@
           } catch(e) { }
         }
         addListener(window, 'message', onMessage);
+
+        return {
+          close: function() {
+            if (w) w.close();
+            w = undefined;
+          },
+          focus: function() {
+            if (w) w.focus();
+          }
+        };
       },
       onOpen: function(cb) {
         var o = "*";

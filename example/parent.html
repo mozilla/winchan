@@ -2,9 +2,15 @@
 <html>
 <body>
 <p>
-hi!  this is a simple webpage that uses winchan to open a window with 
-parameters.
-<button>run-it</button>
+hi!  this is a simple webpage that uses winchan to open a window with
+parameters.  There are a couple different features of the library you can
+manually excercise here:
+<br/>
+<button id="open">open the window</button>
+<br/>
+<button id="close">close the window programatically</button>
+<br/>
+<button id="focus">re-focus the window programatically</button>
 </p>
 
 <p>Here's the response from the window:</p>
@@ -16,10 +22,12 @@ parameters.
 <script src="jquery.js"></script>
 <script>
 
-$("button").click(function(e) {
+var w;
+
+$("#open").click(function(e) {
   $("pre").text("");
   e.preventDefault();
-  WinChan.open(
+  w = WinChan.open(
     "http://127.0.0.1:8200/example/child.html",
     "http://127.0.0.1:8200/relay.html",
     "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
@@ -34,6 +42,15 @@ $("button").click(function(e) {
       $("pre").text("error: " + err + "\n\nresponse: " + JSON.stringify(r, null, "    "));
     });
 });
+
+$("#close").click(function(e) {
+  w.close();
+});
+
+$("#focus").click(function(e) {
+  w.focus();
+});
+
 
 </script>
 </html>
