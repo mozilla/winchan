@@ -83,7 +83,9 @@ node.js and npm are required to run the unit tests. Once installed
     $ scripts/setup_dev_deps.sh
     $ scripts/run_example.js
 
-And open `http://127.0.0.1:8100/test` in your favorite web browser
+And open `http://127.0.0.1:8100/test` in your favorite web browser.
+
+**NOTE:** You'll need to disable popup blocking for localhost to run tests!
 
 ## Testing over the network
 
