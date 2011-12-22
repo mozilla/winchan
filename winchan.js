@@ -47,39 +47,43 @@
     return url;
   }
 
-  if (isInternetExplorer()) {
-    // find the relay iframe in the opener
-    function findRelay() {
-      var loc = window.location;
-      var frames = window.opener.frames;
-      var origin = loc.protocol + '//' + loc.host;
-      for (i = frames.length - 1; i >= 0; i++) {
-        try {
-          if (frames[i].location.href.indexOf(origin) === 0 &&
-              frames[i].name === IFRAME_NAME)
-          {
-            return frames[i];
-          }
-        } catch(e) { }
-      }
-      return;
+  // find the relay iframe in the opener
+  function findRelay() {
+    var loc = window.location;
+    var frames = window.opener.frames;
+    var origin = loc.protocol + '//' + loc.host;
+    for (i = frames.length - 1; i >= 0; i++) {
+      try {
+        if (frames[i].location.href.indexOf(origin) === 0 &&
+            frames[i].name === IFRAME_NAME)
+        {
+          return frames[i];
+        }
+      } catch(e) { }
     }
+    return;
+  }
 
-    /*  This is how we roll on IE:
-     *  0. user clicks
-     *  1. caller adds relay iframe (served from trusted domain) to DOM
-     *  2. caller opens window (with content from trusted domain)
-     *  3. window on opening adds a listener to 'message'
-     *  4. window on opening finds iframe
-     *  5. window checks if iframe is "loaded" - has a 'doPost' function yet
-     *  5a. if iframe.doPost exists, window uses it to send ready event to caller
-     *  5b. if iframe.doPost doesn't exist, window waits for frame ready
-     *   5bi. once ready, window calls iframe.doPost to send ready event
-     *  6. caller upon reciept of 'ready', sends args
+  var isIE = isInternetExplorer();
+
+  if (isSupported()) {
+    /*  General flow:
+     *                  0. user clicks
+     *  (IE SPECIFIC)   1. caller adds relay iframe (served from trusted domain) to DOM
+     *                  2. caller opens window (with content from trusted domain)
+     *                  3. window on opening adds a listener to 'message'
+     *  (IE SPECIFIC)   4. window on opening finds iframe
+     *                  5. window checks if iframe is "loaded" - has a 'doPost' function yet
+     *  (IE SPECIFIC5)  5a. if iframe.doPost exists, window uses it to send ready event to caller
+     *  (IE SPECIFIC5)  5b. if iframe.doPost doesn't exist, window waits for frame ready
+     *  (IE SPECIFIC5)  5bi. once ready, window calls iframe.doPost to send ready event
+     *                  6. caller upon reciept of 'ready', sends args
      */
     return {
       open: function(url, relay_url, winopts, arg, cb) {
         if (!cb) throw "missing required callback argument";
+
+        var iframe;
 
         // sanity check, are url and relay_url the same origin?
         var origin = extractOrigin(url);
@@ -90,129 +94,41 @@
           return;
         }
 
-        // first we need to add a "relay" iframe to the document that's served
-        // from the target domain.  We can postmessage into a iframe, but not a
-        // window
-        var iframe = document.createElement("iframe");
-        // iframe.setAttribute('name', framename);
-        iframe.setAttribute('src', relay_url);
-        iframe.style.display = "none";
-        iframe.setAttribute('name', IFRAME_NAME);
-        document.body.appendChild(iframe);
+        var messageTarget;
 
-        var w = window.open(url, null, winopts); 
-        var req = JSON.stringify({a: 'request', d: arg});
-
-        // cleanup on unload
-        function cleanup() {
-          document.body.removeChild(iframe);
-          if (w) w.close();
-          w = undefined;
-        }
-
-        addListener(window, 'unload', cleanup);
-
-        function onMessage(e) {
-          try {
-            var d = JSON.parse(e.data);
-            if (d.a === 'ready') iframe.contentWindow.postMessage(req, origin);
-            else if (d.a === 'error') cb(d.d);
-            else if (d.a === 'response') {
-              removeListener(window, 'message', onMessage);
-              removeListener(window, 'unload', cleanup);
-              cleanup();
-              cb(null, d.d);
-            }
-          } catch(e) { }
-        };
-
-        addListener(window, 'message', onMessage);
-
-        return {
-          close: function() {
-            if (w) w.close();
-            w = undefined;
-          },
-          focus: function() {
-            if (w) w.focus();
-          }
-        };
-      },
-      onOpen: function(cb) {
-        var o = "*";
-        var theFrame = findRelay();
-        if (!theFrame) throw "can't find relay frame";
-
-        function onMessage(e) {
-          // only one message gets through
-          removeListener(window, 'message', onMessage);
-          var d;
-          o = e.origin;
-          try {
-            d = JSON.parse(e.data);
-          } catch(e) { }
-          if (cb) cb(o, d.d, function(r) {
-            cb = undefined;
-            theFrame.doPost(JSON.stringify({a: 'response', d: r}), o);
-          });
-        }
-        addListener(theFrame, 'message', onMessage);
-
-        // we cannot post to our parent that we're ready before the iframe
-        // is loaded.
-        try {
-          theFrame.doPost('{"a": "ready"}', o);
-        } catch(e) {
-          addListener(theFrame, 'load', function(e) {
-            theFrame.doPost('{"a": "ready"}', o);
-          });
-        }
-
-        // if window is unloaded and the client hasn't called cb, it's an error
-        var onUnload = function() {
-          if (cb) theFrame.doPost(JSON.stringify({
-            a: 'error', d: 'client closed window'
-          }), o);
-          cb = undefined;
-          // explicitly close the window, in case the client is trying to reload or nav
-          try { window.close(); } catch (e) { };
-        };
-        addListener(window, 'unload', onUnload);
-        return {
-          detach: function() {
-            removeListener(window, 'unload', onUnload);
-          }
-        };
-      }
-    };
-  } else if (isSupported()) {
-    return {
-      open: function(url, relay_url, winopts, arg, cb) {
-        if (!cb) throw "missing required callback argument";
-
-        // sanity check, are url and relay_url the same origin? 
-        var origin = extractOrigin(url);
-        if (origin !== extractOrigin(relay_url)) {
-          setTimeout(function() {
-            cb('invalid arguments: origin of url and relay_url must match');
-          })
-          return;
+        if (isIE) {
+          // first we need to add a "relay" iframe to the document that's served
+          // from the target domain.  We can postmessage into a iframe, but not a
+          // window
+          iframe = document.createElement("iframe");
+          // iframe.setAttribute('name', framename);
+          iframe.setAttribute('src', relay_url);
+          iframe.style.display = "none";
+          iframe.setAttribute('name', IFRAME_NAME);
+          document.body.appendChild(iframe)
+          messageTarget = iframe.contentWindow;
         }
 
         var w = window.open(url, null, isFennec() ? undefined : winopts);
+
+        if (!messageTarget) messageTarget = w;
+
         var req = JSON.stringify({a: 'request', d: arg});
 
         // cleanup on unload
         function cleanup() {
+          if (iframe) document.body.removeChild(iframe);
+          iframe = undefined;
           if (w) w.close();
           w = undefined;
         }
+
         addListener(window, 'unload', cleanup);
 
         function onMessage(e) {
           try {
             var d = JSON.parse(e.data);
-            if (d.a === 'ready') w.postMessage(req, origin);
+            if (d.a === 'ready') messageTarget.postMessage(req, origin);
             else if (d.a === 'error') cb(d.d);
             else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
@@ -221,14 +137,12 @@
               cb(null, d.d);
             }
           } catch(e) { }
-        }
+        };
+
         addListener(window, 'message', onMessage);
 
         return {
-          close: function() {
-            if (w) w.close();
-            w = undefined;
-          },
+          close: cleanup,
           focus: function() {
             if (w) w.focus();
           }
@@ -236,7 +150,14 @@
       },
       onOpen: function(cb) {
         var o = "*";
-        var parentWin = window.opener;
+        var msgTarget = isIE ? findRelay() : window.opener;
+        if (!msgTarget) throw "can't find relay frame";
+        function doPost(msg) {
+          msg = JSON.stringify(msg);
+          if (isIE) msgTarget.doPost(msg, o);
+          else msgTarget.postMessage(msg, o);
+        }
+
         function onMessage(e) {
           // only one message gets through
           removeListener(window, 'message', onMessage);
@@ -244,23 +165,35 @@
           o = e.origin;
           try {
             d = JSON.parse(e.data);
-          } catch(e) {
-            // ignore
+          } catch(e) { }
+          if (cb) {
+            // this setTimeout is critically important for IE8 -
+            // in ie8 sometimes addListener for 'message' can synchronously
+            // cause your callback to be invoked.  awesome.
+            setTimeout(function() {
+              cb(o, d.d, function(r) {
+                cb = undefined;
+                doPost({a: 'response', d: r});
+              });
+            }, 0);
           }
-          cb(o, d.d, function(r) {
-            cb = undefined;
-            parentWin.postMessage(JSON.stringify({a: 'response', d: r}), o);
+        }
+        addListener(isIE ? msgTarget : window, 'message', onMessage);
+
+        // we cannot post to our parent that we're ready before the iframe
+        // is loaded. (IE specific possible failure)
+        try {
+          doPost({a: "ready"});
+        } catch(e) {
+          // this code should never be exectued outside IE
+          addListener(theFrame, 'load', function(e) {
+            doPost({a: "ready"});
           });
         }
-        addListener(window, 'message', onMessage);
-        parentWin.postMessage('{"a": "ready"}', o);
 
         // if window is unloaded and the client hasn't called cb, it's an error
         var onUnload = function() {
-          if (cb) parentWin.postMessage(JSON.stringify({
-            a: 'error',
-            d: 'client closed window'
-          }), o);
+          if (cb) doPost({ a: 'error', d: 'client closed window' });
           cb = undefined;
           // explicitly close the window, in case the client is trying to reload or nav
           try { window.close(); } catch (e) { };
@@ -272,7 +205,7 @@
           }
         };
       }
-    };
+    }
   } else {
     return {
       open: function(url, winopts, arg, cb) {
