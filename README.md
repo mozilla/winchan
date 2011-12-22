@@ -94,6 +94,6 @@ So to test over the network:
     $ scripts/setup_dev_deps.sh
     $ IP_ADDRESS=<my external IP> scripts/run_example.js
 
-(repace <my external IP> with *your* IP address)
+(repace `<my external IP>` with *your* IP address)
 
 then hit `http://<my external IP>:8100/test`
