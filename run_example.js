@@ -27,6 +27,6 @@ server
   .use(express.static(path.join(__dirname)))
   .listen(8200);
 
-console.log("open http://" + IP_ADDRESS + ":8100/example/parent.html");
-console.log("OR");
-console.log("open http://" + IP_ADDRESS + ":8100/complex_example/parent.html");
+console.log("An example: http://" + IP_ADDRESS + ":8100/example");
+console.log("A more complicated example: http://" + IP_ADDRESS + ":8100/complex_example");
+console.log("Unit tests: http://" + IP_ADDRESS + ":8100/test");
