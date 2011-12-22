@@ -143,6 +143,8 @@
         if (!theFrame) throw "can't find relay frame";
 
         function onMessage(e) {
+          // only one message gets through
+          removeListener(window, 'message', onMessage);
           var d;
           o = e.origin;
           try {
@@ -229,6 +231,8 @@
         var o = "*";
         var parentWin = window.opener;
         function onMessage(e) {
+          // only one message gets through
+          removeListener(window, 'message', onMessage);
           var d;
           o = e.origin;
           try {
