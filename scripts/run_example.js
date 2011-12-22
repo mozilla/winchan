@@ -18,13 +18,13 @@ var subMiddleware = postprocess(function(req, buf) {
 client
   .use(express.logger({ format: 'dev' }))
   .use(subMiddleware)
-  .use(express.static(path.join(__dirname)))
+  .use(express.static(path.join(path.dirname(__dirname))))
   .listen(8100);
 
 server
   .use(express.logger({ format: 'dev' }))
   .use(subMiddleware)
-  .use(express.static(path.join(__dirname)))
+  .use(express.static(path.join(path.dirname(__dirname))))
   .listen(8200);
 
 console.log("An example: http://" + IP_ADDRESS + ":8100/example");
