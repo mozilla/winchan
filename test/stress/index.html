@@ -13,7 +13,7 @@ to run 100 iterations.  DISABLE POPUP BLOCKING too!
 </pre>
 
 </body>
-<script src="../winchan.js"></script>
+<script src="../../winchan.js"></script>
 <script src="jquery.js"></script>
 <script>
 
@@ -23,22 +23,22 @@ $("button").click(function(e) {
 
   e.preventDefault();
   function doIt() {
-    WinChan.open(
-      "http://127.0.0.1:8200/test/child.html",
-      "http://127.0.0.1:8200/relay.html",
-      "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
-      {
+    WinChan.open({
+      url: "http://127.0.0.1:8200/test/stress/child.html",
+      relay_url: "http://127.0.0.1:8200/relay.html",
+      window_features: "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
+      params: {
         these: "things",
         are: "input parameters",
         the: "interface",
         is_beautiful: true,
         timestamp: new Date().toString()
-      },
-      function(err, r) {
-        if (!err) success++;
-        if (++iterations < 50) setTimeout(doIt, 0);
-        $("pre").text("successful/total iterations: " + success + "/" + iterations);
-      });
+      }
+    }, function(err, r) {
+      if (!err) success++;
+      if (++iterations < 50) setTimeout(doIt, 0);
+      $("pre").text("successful/total iterations: " + success + "/" + iterations);
+    });
   }
   doIt();
 });

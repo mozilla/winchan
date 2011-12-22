@@ -35,18 +35,17 @@ WinChan is expected to work on:
 
 For the site spawning the window, the "untrusted" or "client" code:
 
-    WinChan.open(
-      "http://trusted.host/dialog.html",
-      "http://trusted.host/relay.html",
-      "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
-      {
+    WinChan.open({
+      url: "http://trusted.host/dialog.html",
+      relay_url: "http://trusted.host/relay.html",
+      window_features: "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
+      params: {
         these: "things",
         are: "input parameters"
-      },
-      function(err, r) {
-        // err is a string on failure, otherwise r is the response object
       }
-    );
+    }, function(err, r) {
+      // err is a string on failure, otherwise r is the response object
+    });
 
 For the site providing the window, the "trusted" code:
 

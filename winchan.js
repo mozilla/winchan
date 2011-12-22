@@ -1,5 +1,5 @@
 ;WinChan = (function() {
-  var IFRAME_NAME = "_moz_vep_comm_iframe";
+  var RELAY_FRAME_NAME = "__winchan_relay_frame";
 
   // a portable addListener implementation
   function addListener(w, event, cb) {
@@ -55,7 +55,7 @@
     for (i = frames.length - 1; i >= 0; i++) {
       try {
         if (frames[i].location.href.indexOf(origin) === 0 &&
-            frames[i].name === IFRAME_NAME)
+            frames[i].name === RELAY_FRAME_NAME)
         {
           return frames[i];
         }
@@ -80,18 +80,28 @@
      *                  6. caller upon reciept of 'ready', sends args
      */
     return {
-      open: function(url, relay_url, winopts, arg, cb) {
+      open: function(opts, cb) {
         if (!cb) throw "missing required callback argument";
+
+        // test required options
+        var err;
+        if (!opts.url) err = "missing required 'url' parameter";
+        if (!opts.relay_url) err = "missing required 'relay_url' parameter";
+        if (err) setTimeout(function() { cb(err); }, 0);
+
+        // supply default options
+        if (!opts.window_features || isFennec()) opts.window_features = undefined;
+
+        // opts.params may be undefined
 
         var iframe;
 
         // sanity check, are url and relay_url the same origin?
-        var origin = extractOrigin(url);
-        if (origin !== extractOrigin(relay_url)) {
-          setTimeout(function() {
+        var origin = extractOrigin(opts.url);
+        if (origin !== extractOrigin(opts.relay_url)) {
+          return setTimeout(function() {
             cb('invalid arguments: origin of url and relay_url must match');
-          })
-          return;
+          }, 0);
         }
 
         var messageTarget;
@@ -102,18 +112,18 @@
           // window
           iframe = document.createElement("iframe");
           // iframe.setAttribute('name', framename);
-          iframe.setAttribute('src', relay_url);
+          iframe.setAttribute('src', opts.relay_url);
           iframe.style.display = "none";
-          iframe.setAttribute('name', IFRAME_NAME);
+          iframe.setAttribute('name', RELAY_FRAME_NAME);
           document.body.appendChild(iframe)
           messageTarget = iframe.contentWindow;
         }
 
-        var w = window.open(url, null, isFennec() ? undefined : winopts);
+        var w = window.open(opts.url, null, opts.window_features);
 
         if (!messageTarget) messageTarget = w;
 
-        var req = JSON.stringify({a: 'request', d: arg});
+        var req = JSON.stringify({a: 'request', d: opts.params});
 
         // cleanup on unload
         function cleanup() {
@@ -186,7 +196,7 @@
           doPost({a: "ready"});
         } catch(e) {
           // this code should never be exectued outside IE
-          addListener(theFrame, 'load', function(e) {
+          addListener(msgTarget, 'load', function(e) {
             doPost({a: "ready"});
           });
         }

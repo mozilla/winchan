@@ -13,7 +13,7 @@ manually excercise here:
 <button id="focus">re-focus the window programatically</button>
 </p>
 
-<p>Here's the response from the window:</p>
+<p>Here&apos;s the response from the window:</p>
 <pre>
 </pre>
 
@@ -27,20 +27,21 @@ var w;
 $("#open").click(function(e) {
   $("pre").text("");
   e.preventDefault();
-  w = WinChan.open(
-    "http://127.0.0.1:8200/example/child.html",
-    "http://127.0.0.1:8200/relay.html",
-    "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
-    {
+  w = WinChan.open({
+    url: "http://127.0.0.1:8200/example/child.html",
+    relay_url: "http://127.0.0.1:8200/relay.html",
+    window_features: "menubar=0,location=0,resizable=0,scrollbars=0,status=0,dialog=1,width=700,height=375",
+    params: {
       these: "things",
       are: "input parameters",
       the: "interface",
       is_beautiful: true,
       timestamp: new Date().toString()
-    },
-    function(err, r) {
-      $("pre").text("error: " + err + "\n\nresponse: " + JSON.stringify(r, null, "    "));
-    });
+    }
+  },
+  function(err, r) {
+    $("pre").text("error: " + err + "\n\nresponse: " + JSON.stringify(r, null, "    "));
+  });
 });
 
 $("#close").click(function(e) {
