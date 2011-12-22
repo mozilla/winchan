@@ -41,6 +41,7 @@
 
   // given a URL, extract the origin
   function extractOrigin(url) {
+    if (!/^https?:\/\//.test(url)) url = window.location.href;
     var m = /^(https?:\/\/[-_a-zA-Z\.0-9:]+)/.exec(url);
     if (m) return m[1];
     return url;
@@ -80,7 +81,7 @@
       open: function(url, relay_url, winopts, arg, cb) {
         if (!cb) throw "missing required callback argument";
 
-        // sanity check, are url and relay_url the same origin? 
+        // sanity check, are url and relay_url the same origin?
         var origin = extractOrigin(url);
         if (origin !== extractOrigin(relay_url)) {
           setTimeout(function() {
@@ -263,11 +264,11 @@
           cb = undefined;
           // explicitly close the window, in case the client is trying to reload or nav
           try { window.close(); } catch (e) { };
-        }; 
+        };
         addListener(window, 'unload', onUnload);
         return {
           detach: function() {
-            removeListener(window, 'unload', onUnload);            
+            removeListener(window, 'unload', onUnload);
           }
         };
       }

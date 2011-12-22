@@ -1,26 +1,10 @@
 $(document).ready(function(){
-  
-  test("a basic test example", function() {
-    ok( true, "this test is fine" );
-    var value = "hello";
-    equal( value, "hello", "We expect value to be hello" );
-  });
-
-  module("Module A");
-
-  test("first test within module", function() {
-    ok( true, "all pass" );
-  });
-
-  test("second test within module", function() {
-    ok( true, "all pass" );
-  });
-
-  module("Module B");
-
-  test("some other test", function() {
-    expect(2);
-    equal( true, false, "failing test" );
-    equal( true, true, "passing test" );
+  asyncTest("basic passing and returning of params to winchan", function() {
+    var argString = "This is a string we'll send into and back from the dialog: " +
+      (new Date()).toString();
+    WinChan.open("cases/basic/child.html", "/relay.html", "width=700,height=375", argString, function(err, resp) {
+      equal(resp, argString);
+      start();
+    });
   });
 });
