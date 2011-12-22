@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<p>hi!  this is a page that you got redirected to inside the dialog</p>
+<button>go back</button>
+</body>
+<script src="../winchan.js"></script>
+<script src="jquery.js"></script>
+<script>
+
+$("button").click(function() {
+  window.location = "http://127.0.0.1:8200/complex_example/child.html#complete";
+});
+
+</script>
+</html>

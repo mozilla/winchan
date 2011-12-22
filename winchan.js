@@ -168,14 +168,20 @@
         }
 
         // if window is unloaded and the client hasn't called cb, it's an error
-        addListener(window, 'unload', function() {
+        var onUnload = function() {
           if (cb) theFrame.doPost(JSON.stringify({
             a: 'error', d: 'client closed window'
           }), o);
           cb = undefined;
           // explicitly close the window, in case the client is trying to reload or nav
           try { window.close(); } catch (e) { };
-        });
+        };
+        addListener(window, 'unload', onUnload);
+        return {
+          detach: function() {
+            removeListener(window, 'unload', onUnload);
+          }
+        };
       }
     };
   } else if (isSupported()) {
@@ -249,7 +255,7 @@
         parentWin.postMessage('{"a": "ready"}', o);
 
         // if window is unloaded and the client hasn't called cb, it's an error
-        addListener(window, 'unload', function() {
+        var onUnload = function() {
           if (cb) parentWin.postMessage(JSON.stringify({
             a: 'error',
             d: 'client closed window'
@@ -257,7 +263,13 @@
           cb = undefined;
           // explicitly close the window, in case the client is trying to reload or nav
           try { window.close(); } catch (e) { };
-        });
+        }; 
+        addListener(window, 'unload', onUnload);
+        return {
+          detach: function() {
+            removeListener(window, 'unload', onUnload);            
+          }
+        };
       }
     };
   } else {

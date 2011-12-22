@@ -28,3 +28,5 @@ server
   .listen(8200);
 
 console.log("open http://" + IP_ADDRESS + ":8100/example/parent.html");
+console.log("OR");
+console.log("open http://" + IP_ADDRESS + ":8100/complex_example/parent.html");
