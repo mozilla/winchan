@@ -53,7 +53,7 @@ For the site providing the window, the "trusted" code:
       // origin is the scheme+host+port that cause window invocation,
       // it can be trusted
 
-      // 'r' are the untrusted arguments provided by the calling site
+      // args are the untrusted arguments provided by the calling site
 
       // and cb you can call within the function, or synchronously later.
       // calling it indicated the window is done and can be closed.
