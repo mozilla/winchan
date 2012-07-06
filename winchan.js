@@ -1,5 +1,6 @@
 ;WinChan = (function() {
   var RELAY_FRAME_NAME = "__winchan_relay_frame";
+  var CLOSE_CMD = "die";
 
   // a portable addListener implementation
   function addListener(w, event, cb) {
@@ -129,8 +130,16 @@
         function cleanup() {
           if (iframe) document.body.removeChild(iframe);
           iframe = undefined;
-          if (w) w.close();
-          w = undefined;
+          if (w) {
+            try {
+              w.close();
+            } catch (securityViolation) {
+              // This happens in Opera 12 sometimes
+              // see https://github.com/mozilla/browserid/issues/1844
+              messageTarget.postMessage(CLOSE_CMD, origin);
+            }
+          }
+          w = messageTarget = undefined;
         }
 
         addListener(window, 'unload', cleanup);
@@ -188,7 +197,14 @@
             }, 0);
           }
         }
+
+        function onDie(e) {
+          if (e.data === CLOSE_CMD) {
+            try { window.close(); } catch (o_O) {}
+          }
+        }
         addListener(isIE ? msgTarget : window, 'message', onMessage);
+        addListener(isIE ? msgTarget : window, 'message', onDie);
 
         // we cannot post to our parent that we're ready before the iframe
         // is loaded. (IE specific possible failure)
@@ -203,6 +219,7 @@
 
         // if window is unloaded and the client hasn't called cb, it's an error
         var onUnload = function() {
+          removeListener(isIE ? msgTarget : window, 'message', onDie);
           if (cb) doPost({ a: 'error', d: 'client closed window' });
           cb = undefined;
           // explicitly close the window, in case the client is trying to reload or nav
