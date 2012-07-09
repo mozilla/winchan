@@ -17,7 +17,7 @@
   // checking for IE8 or above
   function isInternetExplorer() {
     var rv = -1; // Return value assumes failure.
-    if (navigator.appName == 'Microsoft Internet Explorer') {
+    if (navigator.appName === 'Microsoft Internet Explorer') {
       var ua = navigator.userAgent;
       var re = new RegExp("MSIE ([0-9]{1,}[\.0-9]{0,})");
       if (re.exec(ua) != null)
@@ -29,7 +29,11 @@
   // checking Mobile Firefox (Fennec)
   function isFennec() {
     try {
-      return (navigator.userAgent.indexOf('Fennec/') != -1);
+      // We must check for both XUL and Java versions of Fennec.  Both have
+      // distinct UA strings.
+      var userAgent = navigator.userAgent;
+      return (userAgent.indexOf('Fennec/') != -1) ||  // XUL
+             (userAgent.indexOf('Firefox/') != -1 && userAgent.indexOf('Android') != -1);   // Java
     } catch(e) {};
     return false;
   }
@@ -43,7 +47,7 @@
   // given a URL, extract the origin
   function extractOrigin(url) {
     if (!/^https?:\/\//.test(url)) url = window.location.href;
-    var m = /^(https?:\/\/[-_a-zA-Z\.0-9:]+)/.exec(url);
+    var m = /^(https?:\/\/[\-_a-zA-Z\.0-9:]+)/.exec(url);
     if (m) return m[1];
     return url;
   }
@@ -116,7 +120,7 @@
           iframe.setAttribute('src', opts.relay_url);
           iframe.style.display = "none";
           iframe.setAttribute('name', RELAY_FRAME_NAME);
-          document.body.appendChild(iframe)
+          document.body.appendChild(iframe);
           messageTarget = iframe.contentWindow;
         }
 
@@ -148,22 +152,35 @@
           try {
             var d = JSON.parse(e.data);
             if (d.a === 'ready') messageTarget.postMessage(req, origin);
-            else if (d.a === 'error') cb(d.d);
-            else if (d.a === 'response') {
+            else if (d.a === 'error') {
+              if (cb) {
+                cb(d.d);
+                cb = null;
+              }
+            } else if (d.a === 'response') {
               removeListener(window, 'message', onMessage);
               removeListener(window, 'unload', cleanup);
               cleanup();
-              cb(null, d.d);
+              if (cb) {
+                cb(null, d.d);
+                cb = null;
+              }
             }
-          } catch(e) { }
-        };
+          } catch(err) { }
+        }
 
         addListener(window, 'message', onMessage);
 
         return {
           close: cleanup,
           focus: function() {
-            if (w) w.focus();
+            if (w) {
+              try {
+                w.focus();
+              } catch (e) {
+                // IE7 blows up here, do nothing
+              }
+            }
           }
         };
       },
@@ -184,7 +201,7 @@
           o = e.origin;
           try {
             d = JSON.parse(e.data);
-          } catch(e) { }
+          } catch(err) { }
           if (cb) {
             // this setTimeout is critically important for IE8 -
             // in ie8 sometimes addListener for 'message' can synchronously
@@ -223,7 +240,7 @@
           if (cb) doPost({ a: 'error', d: 'client closed window' });
           cb = undefined;
           // explicitly close the window, in case the client is trying to reload or nav
-          try { window.close(); } catch (e) { };
+          try { window.close(); } catch (e) { }
         };
         addListener(window, 'unload', onUnload);
         return {
@@ -232,7 +249,7 @@
           }
         };
       }
-    }
+    };
   } else {
     return {
       open: function(url, winopts, arg, cb) {
