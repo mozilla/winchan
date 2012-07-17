@@ -3,7 +3,7 @@
 <head>
 <script src="/winchan.js"></script>
 <script>
-  WinChan.onOpen(function(origin, args, cb) { cb(args); });
+  WinChan.onOpen(function(origin, args, cb) { cb(window.name + ": " + args); });
 </script>
 </head>
 </html>
