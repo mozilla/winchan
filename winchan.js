@@ -209,7 +209,7 @@
         }
 
         function onMessage(e) {
-          // on)y one message gets through, but let's make sure it's actually
+          // only one message gets through, but let's make sure it's actually
           // the message we're looking for (other code may be using
           // postmessage) - we do this by ensuring the payload can
           // be parsed, and it's got an 'a' (action) value of 'request'.
