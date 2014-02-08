@@ -56,19 +56,19 @@
   // given a URL, extract the origin
   function extractOrigin(url) {
     if (!/^https?:\/\//.test(url)) url = window.location.href;
-    var m = /^(https?:\/\/[\-_a-zA-Z\.0-9:]+)/.exec(url);
-    if (m) return m[1];
-    return url;
+    var a = document.createElement('a');
+    a.href = url;
+    return a.protocol + "//" + a.host;
   }
 
   // find the relay iframe in the opener
   function findRelay() {
     var loc = window.location;
     var frames = window.opener.frames;
-    var origin = loc.protocol + '//' + loc.host;
     for (var i = frames.length - 1; i >= 0; i--) {
       try {
-        if (frames[i].location.href.indexOf(origin) === 0 &&
+        if (frames[i].location.protocol === window.location.protocol &&
+            frames[i].location.host === window.location.host &&
             frames[i].name === RELAY_FRAME_NAME)
         {
           return frames[i];
