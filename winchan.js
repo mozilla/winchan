@@ -58,7 +58,11 @@
     if (!/^https?:\/\//.test(url)) url = window.location.href;
     var a = document.createElement('a');
     a.href = url;
-    return a.protocol + "//" + a.host;
+
+    var re = {'http:': /:80$/, 'https:': /:443$/, 'ftp:': /:21$/}[a.protocol];
+    var host = re ? a.host.replace(re, '') : a.host;
+
+    return a.protocol + "//" + host;
   }
 
   // find the relay iframe in the opener
