@@ -59,7 +59,8 @@
     var a = document.createElement('a');
     a.href = url;
 
-    var re = {'http:': /:80$/, 'https:': /:443$/, 'ftp:': /:21$/}[a.protocol];
+    // remove protocol from evaluated hostname, since IE10+ appends it by default
+    var re = {'http:': /:80$/, 'https:': /:443$/}[a.protocol];
     var host = re ? a.host.replace(re, '') : a.host;
 
     return a.protocol + "//" + host;
