@@ -25,7 +25,7 @@
         rv = parseFloat(RegExp.$1);
     }
     // IE > 11
-    else if (ua.indexOf("Trident") > -1) {
+    else if (typeof ua === 'string' && ua.indexOf("Trident") > -1) {
       var re = new RegExp("rv:([0-9]{2,2}[\.0-9]{0,})");
       if (re.exec(ua) !== null) {
         rv = parseFloat(RegExp.$1);
